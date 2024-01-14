@@ -1,4 +1,8 @@
 # AES pamata konstantes un tabulas
+import tkinter as tk
+from tkinter import filedialog
+from tkinter import messagebox
+
 Nb = 4
 Nk = 4
 Nr = 10
@@ -240,46 +244,94 @@ def get_hex_input(prompt, length):
         else:
             print(f"Ievadiet pareizu {length} zīmju garumu.")
 
+def encrypt_file():
+    file_path = entry_file_path.get()
+    key_hex = entry_key.get()
+    iv_hex = entry_iv.get()
 
-def main():
-    action = input("Ievadiet darbību (encrypt vai decrypt): ").lower()
-    if action not in ['encrypt', 'decrypt']:
-        raise ValueError("Nepareiza darbība. Ievadiet 'encrypt' vai 'decrypt'.")
+    try:
+        key = bytes.fromhex(key_hex)
+        iv = bytes.fromhex(iv_hex)
 
-    # Ievadīt faila ceļu
-    file_path = input("Ievadiet faila ceļu: ")
-
-    # Ievadīt šifrēšanas atslēgu
-    key_hex = input("Ievadiet 32 zīmju garu heksadecimālo atslēgu: ")
-    key = bytes.fromhex(key_hex)
-
-    # Ievadīt inicializācijas vektoru
-    iv_hex = input("Ievadiet 32 zīmju garu heksadecimālo inicializācijas vektoru (IV): ")
-    iv = bytes.fromhex(iv_hex)
-
-    # Determine the action
-    if action == 'encrypt':
+        # Nolasīt failu
         with open(file_path, 'rb') as file:
             plaintext = file.read()
-            encrypted = ofb_encrypt(plaintext, key, iv)
 
-            # Save the encrypted file
-            encrypted_file_path = f"{file_path}_encrypted.bin"
-            with open(encrypted_file_path, 'wb') as encrypted_file:
-                encrypted_file.write(encrypted)
-            print(f"Encrypted file saved as {encrypted_file_path}")
+        # Veikt šifrēšanu
+        encrypted = ofb_encrypt(plaintext, key, iv)
 
-    elif action == 'decrypt':
+        # Saglabāt šifrēto failu
+        test = file_path.split(".")
+        pathlength = len(file_path) - len(test[-1]) -1
+        pathdir = file_path[:pathlength]
+        print(pathdir)
+        encrypted_file_path = f"{pathdir}_encrypted.bin"
+        with open(encrypted_file_path, 'wb') as encrypted_file:
+            encrypted_file.write(iv + encrypted)  # Pievieno IV faila sākumā
+
+        messagebox.showinfo("Informācija", "Faila šifrēšana pabeigta.")
+    except Exception as e:
+        messagebox.showerror("Kļūda", str(e))
+
+def decrypt_file():
+    file_path = entry_file_path.get()
+    key_hex = entry_key.get()
+
+    try:
+        key = bytes.fromhex(key_hex)
+
+        # Nolasīt šifrēto failu
         with open(file_path, 'rb') as file:
-            encrypted = file.read()
-            decrypted = ofb_encrypt(encrypted, key, iv)  # OFB is symmetric
+            file_contents = file.read()
+            iv, encrypted = file_contents[:16], file_contents[16:]  # Atdalīt IV
 
-            # Save the decrypted file
-            decrypted_file_path = f"{file_path}_decrypted.docx"
-            with open(decrypted_file_path, 'wb') as decrypted_file:
-                decrypted_file.write(decrypted)
-            print(f"Decrypted file saved as {decrypted_file_path}")
+        # Veikt atšifrēšanu
+        decrypted = ofb_encrypt(encrypted, key, iv)  # OFB ir simetrisks
+
+        # Saglabāt atšifrēto failu
+        test = file_path.split(".")
+        pathlength = len(file_path) - len(test[-1])-1
+        pathdir = file_path[:pathlength]
+        print(pathdir)
+        decrypted_file_path = f"{pathdir}_decrypted.docx"
+        with open(decrypted_file_path, 'wb') as decrypted_file:
+            decrypted_file.write(decrypted)
+
+        messagebox.showinfo("Informācija", "Faila atšifrēšana pabeigta.")
+    except Exception as e:
+        messagebox.showerror("Kļūda", str(e))
 
 
-if __name__ == "__main__":
-    main()
+def select_file():
+    file_path = filedialog.askopenfilename()
+    entry_file_path.delete(0, tk.END)
+    entry_file_path.insert(0, file_path)
+
+# Galvenā loga izveide
+root = tk.Tk()
+root.title("Failu Šifrēšana/Atšifrēšana")
+
+# Faila ceļa ievades lauks
+tk.Label(root, text="Faila ceļš:").grid(row=0, column=0)
+entry_file_path = tk.Entry(root, width=50)
+entry_file_path.grid(row=0, column=1)
+button_browse = tk.Button(root, text="Pārlūkot...", command=select_file)
+button_browse.grid(row=0, column=2)
+
+# Šifrēšanas atslēgas ievades lauks
+tk.Label(root, text="Šifrēšanas atslēga:").grid(row=1, column=0)
+entry_key = tk.Entry(root, width=50)
+entry_key.grid(row=1, column=1)
+
+# IV ievades lauks
+tk.Label(root, text="Inicializācijas vektors (IV):").grid(row=2, column=0)
+entry_iv = tk.Entry(root, width=50)
+entry_iv.grid(row=2, column=1)
+
+encrypt_button = tk.Button(root, text="Šifrēt", command=encrypt_file)
+encrypt_button.grid(row=3, column=1, pady=5)
+
+decrypt_button = tk.Button(root, text="Atšifrēt", command=decrypt_file)
+decrypt_button.grid(row=4, column=1, pady=5)
+
+root.mainloop()
