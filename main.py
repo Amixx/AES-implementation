@@ -62,7 +62,28 @@ def shift_rows(state, inv=False):
 
 def mix_columns(state, inv=False):
     """Kolonnu maisīšana."""
-    # Šeit būtu jābūt pilnai MixColumns implementācijai
+    if not inv:  # MixColumns
+        for i in range(4):
+            a = state[0][i]
+            b = state[1][i]
+            c = state[2][i]
+            d = state[3][i]
+
+            state[0][i] = galois_mult(a, 2) ^ galois_mult(b, 3) ^ c ^ d
+            state[1][i] = a ^ galois_mult(b, 2) ^ galois_mult(c, 3) ^ d
+            state[2][i] = a ^ b ^ galois_mult(c, 2) ^ galois_mult(d, 3)
+            state[3][i] = galois_mult(a, 3) ^ b ^ c ^ galois_mult(d, 2)
+    else:  # Inverse MixColumns
+        for i in range(4):
+            a = state[0][i]
+            b = state[1][i]
+            c = state[2][i]
+            d = state[3][i]
+
+            state[0][i] = galois_mult(a, 14) ^ galois_mult(b, 11) ^ galois_mult(c, 13) ^ galois_mult(d, 9)
+            state[1][i] =galois_mult(a, 9) ^ galois_mult(b, 14) ^ galois_mult(c, 11) ^ galois_mult(d, 13)
+            state[2][i] = galois_mult(a, 13) ^ galois_mult(b, 9) ^ galois_mult(c, 14) ^ galois_mult(d, 11)
+            state[3][i] = galois_mult(a, 11) ^ galois_mult(b, 13) ^ galois_mult(c, 9) ^ galois_mult(d, 14)
 
 
 def add_round_key(state, w, round=0):
